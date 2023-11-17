@@ -6,7 +6,7 @@
 /*   By: ada-cruz <ada-cruz@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/29 16:48:51 by ada-cruz          #+#    #+#             */
-/*   Updated: 2023/11/16 15:06:49 by ada-cruz         ###   ########.fr       */
+/*   Updated: 2023/11/17 15:24:52 by ada-cruz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ void	free_rt(t_rt *rt)
 	free_ptrptr(&rt->linesread);
 	free_ptrptr(&rt->lineread);
 	free_ptrptr(&rt->color);
-	// free_ptrptr(&rt->coordinates);
+	free_ptrptr(&rt->coordinates);
 	// free(rt->lights);
 	// free_sphere_plane_matrices(rt);
 	// free(rt->spheres);
@@ -341,10 +341,26 @@ void validate_elements(t_rt *rt)
 		print_error("there is a wrong element or object in the file", rt);
 }
 
-// void validate_sphere(t_rt *rt, int sp)
-// {
-		
-// }
+void validate_sphere(t_rt *rt, int sp)
+{
+	if (!rt->lineread[1] || !rt->lineread[2] || !rt->lineread[3] || rt->lineread[4])
+		print_error("Error in sphere validation", rt);
+	rt->coordinates = ft_split(rt->lineread[1], ',');
+	if (!validate_coordinates(rt->coordinates))
+		print_error("Error in sphere coordinates", rt);
+	set_coordinates(&rt->spheres[sp].point, rt->coordinates, POINT);
+	free_ptrptr(&rt->coordinates);
+	if (!validate_double(rt->lineread[2]))
+		print_error("Error in sphere diameter", rt);
+	rt->spheres[sp].diameter = ft_atod(rt->lineread[2]);
+	if (rt->spheres[sp].diameter <= EPSILON)
+		print_error("The diameter is too little", rt);
+	rt->color = ft_split(rt->lineread[3], ',');
+	if (!validate_color(rt->color))
+		print_error("Error in sphere color", rt);
+	set_color(&rt->spheres[sp].color, rt->color);
+	free_ptrptr(&rt->color);			
+}
 
 int main(int argc, char **argv)
 {
@@ -370,21 +386,18 @@ int main(int argc, char **argv)
 		rt->planes = (t_plane *)ft_calloc(rt->num_pl + 1, sizeof(t_plane));
 	if (rt->num_cy)
 		rt-> cylinders = (t_cylinder *)ft_calloc(rt->num_cy + 1, sizeof(t_cylinder));
-	printf("oi");
-	// i = 0;
-	// while(rt->linesread[i])
-	// {
-	// 	rt->lineread = ft_split(rt->linesread[i], ' ');
-	// 	static int	sp = 0;
-	// 	static int	pl = 0;
-	// 	static int	cy = 0;
-	// 	if (ft_strncmp(rt->lineread[0], 'sp', 3) == 0)
-	// 		{
-	// 			validate_sphere(rt, sp);
-	// 			sp++;
-	// 		}
-			
-	// }
+	i = 0;
+	while(rt->linesread[i])
+	{
+		rt->lineread = ft_split(rt->linesread[i], ' ');
+		static int	sp = 0;
+		if (ft_strncmp(rt->lineread[0], "sp", 3) == 0)
+			{
+				validate_sphere(rt, sp);
+				sp++;
+			}
+		i++;
+	}
 	render(rt);
 	mlx_image_to_window(rt->render.mlx, rt->render.image, 0, 0);
 	mlx_loop_hook(rt->render.mlx, &close_window, rt);
