@@ -6,7 +6,7 @@
 /*   By: ada-cruz <ada-cruz@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/29 16:48:51 by ada-cruz          #+#    #+#             */
-/*   Updated: 2023/11/17 15:24:52 by ada-cruz         ###   ########.fr       */
+/*   Updated: 2023/12/04 15:34:55 by ada-cruz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -323,24 +323,6 @@ void validate_light(t_rt *rt)
 	rt->light.light = 1;
 }
 
-void validate_elements(t_rt *rt)
-{
-	if (ft_strncmp(rt->lineread[0], "A", 2) == 0)
-		validate_amb_light(rt);
-	else if (ft_strncmp(rt->lineread[0], "C", 2) == 0)
-		validate_camera(rt);
-	else if (ft_strncmp(rt->lineread[0], "L", 2) == 0)
-		validate_light(rt);
-	else if (ft_strncmp(rt->lineread[0], "sp", 3) == 0)
-		rt->num_sp++;
-	else if (ft_strncmp(rt->lineread[0], "pl", 3) == 0)
-		rt->num_pl++;
-	else if (ft_strncmp(rt->lineread[0], "cy", 3) == 0)
-		rt->num_cy++;
-	else
-		print_error("there is a wrong element or object in the file", rt);
-}
-
 void validate_sphere(t_rt *rt, int sp)
 {
 	if (!rt->lineread[1] || !rt->lineread[2] || !rt->lineread[3] || rt->lineread[4])
@@ -362,15 +344,141 @@ void validate_sphere(t_rt *rt, int sp)
 	free_ptrptr(&rt->color);			
 }
 
-int main(int argc, char **argv)
+void validate_plane(t_rt *rt, int pl)
 {
-	t_rt	*rt;
-	int i;
-	i = 0;
+	if (!rt->lineread[1] || !rt->lineread[2] || !rt->lineread[3] || rt->lineread[4])
+		print_error("Error in plane validation", rt);
+	rt->coordinates = ft_split(rt->lineread[1], ',');
+	if (!validate_coordinates(rt->coordinates))
+		print_error("error in plane coordinates", rt);
+	set_coordinates(&rt->planes[pl].point, rt->coordinates, POINT);
+	free_ptrptr(&rt->coordinates);
+	rt->coordinates = ft_split(rt->lineread[2], ',');
+	if (!validate_coordinates(rt->coordinates))
+		print_error("error in plane coordinates", rt);
+	set_coordinates(&rt->planes[pl].vector, rt->coordinates, VECTOR);
+	if (!validate_normalized_vector(rt->planes[pl].vector))
+		print_error("the plane vector is not normalized", rt);
+	free_ptrptr(&rt->coordinates);
+	rt->color = ft_split(rt->lineread[3], ',');
+	if (!validate_color(rt->color))
+		print_error("error in plane color validation", rt);
+	set_color(&rt->planes[pl].color, rt->color);
+	free_ptrptr(&rt->color);
+}
+
+void validate_cylinder(t_rt *rt, int cy)
+{
+	if (!rt->lineread[1] || !rt->lineread[2] || !rt->lineread[3] \
+		|| !rt->lineread[4] || !rt->lineread[5] ||  rt->lineread[6])
+		print_error("error in cylinder validation", rt);
+	rt->coordinates = ft_split(rt->lineread[1], ',');
+	if (!validate_coordinates(rt->coordinates))
+		print_error("error in cylinder coordinates", rt);
+	set_coordinates(&rt->cylinders[cy].point, rt->coordinates, POINT);
+	free_ptrptr(&rt->coordinates);
+	rt->coordinates = ft_split(rt->lineread[2], ',');
+	if (!validate_coordinates(rt->coordinates))
+		print_error("error in cylinder coordinates", rt);
+	set_coordinates(&rt->cylinders[cy].vector, rt->coordinates, VECTOR);
+	if (!validate_normalized_vector(rt->cylinders[cy].vector))
+		print_error("the cylinders vector is not normalized", rt);
+	free_ptrptr(&rt->coordinates);
+	if (!validate_double(rt->lineread[3]))
+		print_error("error in cylinder diameter", rt);
+	rt->cylinders[cy].diameter = ft_atod(rt->lineread[3]);
+	if (rt->cylinders[cy].diameter <= EPSILON)
+		print_error("Error in cylinder diamter", rt);
+	if (!validate_double(rt->lineread[4]))
+		print_error("error in cylinder height", rt);
+	rt->cylinders[cy].heigh = ft_atod(rt->lineread[4]);
+	if (rt->cylinders[cy].heigh <= EPSILON)
+		print_error("Error in cylinder height", rt);
+	//o felipe colocou algo sobre min e max do cylinder, ainda nao sei o qu eé isso então vou botar depois.
+	rt->color = ft_split(rt->lineread[5], ',');
+	if (!validate_color(rt->color))
+		print_error("Error in cylinder color", rt);
+	set_color(&rt->cylinders[cy].color, rt->color);
+	free_ptrptr(&rt->color);
+}
+
+t_coordinates create_point(double x, double y, double z)
+{
+	t_coordinates tuple_point;
 	
-	rt = init_rt();
-	check_arguments(argc, argv);
-	read_file(rt, argv[1]);
+	tuple_point.x = x;
+	tuple_point.y = y;
+	tuple_point.z = z;
+	tuple_point.w = 1;
+	
+	return (tuple_point);
+}
+
+t_coordinates create_vector(double x, double y, double z)
+{
+	t_coordinates tuple_vector;
+	tuple_vector.x = x;
+	tuple_vector.y = y;
+	tuple_vector.z = z;
+	tuple_vector.w = 0;
+
+	return (tuple_vector);
+}
+
+
+void validate_elements(t_rt *rt)
+{
+	if (!ft_strncmp(rt->lineread[0], "A", 2))
+		validate_amb_light(rt);
+	else if (!ft_strncmp(rt->lineread[0], "C", 2))
+		validate_camera(rt);
+	else if (!ft_strncmp(rt->lineread[0], "L", 2))
+		validate_light(rt);
+	else if (!ft_strncmp(rt->lineread[0], "sp", 3))
+		rt->num_sp++;
+	else if (!ft_strncmp(rt->lineread[0], "pl", 3))
+		rt->num_pl++;
+	else if (!ft_strncmp(rt->lineread[0], "cy", 3))
+		rt->num_cy++;
+	else
+		print_error("there is a wrong element or object in the file", rt);
+}
+
+void add_objects(t_rt *rt)
+{
+	int i;
+
+	i = 0;
+	while(rt->linesread[i])
+	{
+		rt->lineread = ft_split(rt->linesread[i], ' ');
+		static int	sp = 0;
+		static int	pl = 0;
+		static int	cy = 0;
+		if (!ft_strncmp(rt->lineread[0], "sp", 3))
+		{
+			validate_sphere(rt, sp);
+			sp++;
+		}
+		else if (!ft_strncmp(rt->lineread[0], "pl", 3))
+		{
+			validate_plane(rt, pl);
+			pl++;
+		}
+		else if (!ft_strncmp(rt->lineread[0], "cy", 3))
+		{
+			validate_cylinder(rt, cy);
+			cy++;
+		}
+		i++;
+	}
+}
+
+void parser(t_rt *rt)
+{
+	int i;
+
+	i = 0;
 	while(rt->linesread[i])
 	{
 		rt->lineread = ft_split(rt->linesread[i], ' '); 
@@ -386,18 +494,20 @@ int main(int argc, char **argv)
 		rt->planes = (t_plane *)ft_calloc(rt->num_pl + 1, sizeof(t_plane));
 	if (rt->num_cy)
 		rt-> cylinders = (t_cylinder *)ft_calloc(rt->num_cy + 1, sizeof(t_cylinder));
+	add_objects(rt);
+	free_ptrptr(&rt->linesread);
+}
+
+int main(int argc, char **argv)
+{
+	t_rt	*rt;
+	int i;
 	i = 0;
-	while(rt->linesread[i])
-	{
-		rt->lineread = ft_split(rt->linesread[i], ' ');
-		static int	sp = 0;
-		if (ft_strncmp(rt->lineread[0], "sp", 3) == 0)
-			{
-				validate_sphere(rt, sp);
-				sp++;
-			}
-		i++;
-	}
+	
+	rt = init_rt();
+	check_arguments(argc, argv);
+	read_file(rt, argv[1]);
+	parser(rt);
 	render(rt);
 	mlx_image_to_window(rt->render.mlx, rt->render.image, 0, 0);
 	mlx_loop_hook(rt->render.mlx, &close_window, rt);
