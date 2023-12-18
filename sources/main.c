@@ -6,7 +6,7 @@
 /*   By: ada-cruz <ada-cruz@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/29 16:48:51 by ada-cruz          #+#    #+#             */
-/*   Updated: 2023/12/04 15:34:55 by ada-cruz         ###   ########.fr       */
+/*   Updated: 2023/12/05 13:22:57 by ada-cruz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -425,6 +425,14 @@ t_coordinates create_vector(double x, double y, double z)
 	return (tuple_vector);
 }
 
+int are_equals_tuple(t_coordinates a, t_coordinates b)
+{
+	if (are_equals(a.x, b.x) && are_equals(a.y, b.y) \
+		&& are_equals(a.z, b.z) && are_equals(a.w, b.w))
+		return (1);
+	else
+		return (0);
+}
 
 void validate_elements(t_rt *rt)
 {
